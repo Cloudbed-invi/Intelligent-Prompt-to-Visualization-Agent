@@ -1,6 +1,6 @@
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    ScatterChart, Scatter, PieChart, Pie, Cell
+    ScatterChart, Scatter, PieChart, Pie, Cell, Brush
 } from 'recharts';
 // import { AlertTriangle } from 'lucide-react';
 
@@ -29,14 +29,32 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     // Let's implement a simple aggregator.
 
     const processData = () => {
+        let processed = [...data];
+
+        // 1. Filter Data
+        if (spec.filters && Array.isArray(spec.filters)) {
+            spec.filters.forEach((f: any) => {
+                const { column, value, operator } = f;
+                if (!column) return;
+                processed = processed.filter(row => {
+                    const rowVal = row[column];
+                    // Simple weak comparison for now
+                    if (operator === '==') return rowVal == value;
+                    if (operator === '!=') return rowVal != value;
+                    if (operator === '>') return rowVal > value;
+                    if (operator === '<') return rowVal < value;
+                    return true;
+                });
+            });
+        }
+
+        // 2. Aggregate if needed
         if (spec.aggregation && x_axis && y_axis) {
-            // Simple GroupBy & Sum/Count/Avg
             const groups: Record<string, any> = {};
-            data.forEach(row => {
+            processed.forEach(row => {
                 const key = row[x_axis];
                 if (!groups[key]) {
                     groups[key] = { [x_axis]: key, [y_axis]: 0, count: 0 };
-                    // Preserve other cols? No, just needed ones.
                 }
                 const val = parseFloat(row[y_axis]) || 0;
 
@@ -56,36 +74,114 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                 });
             }
 
-            return Object.values(groups);
+            let result = Object.values(groups);
+
+            // 3. Sort if needed
+            if (spec.sort) {
+                const { column, order } = spec.sort;
+                const sortKey = column === 'x_axis' ? x_axis : (column === 'y_axis' ? y_axis : column);
+                if (sortKey) {
+                    result.sort((a: any, b: any) => {
+                        const valA = a[sortKey];
+                        const valB = b[sortKey];
+                        if (valA < valB) return order === 'asc' ? -1 : 1;
+                        if (valA > valB) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+            }
+
+            // 4. Limit if needed
+            if (spec.limit) {
+                result = result.slice(0, spec.limit);
+            }
+
+            return result;
         }
-        return data.slice(0, 500); // Limit points for scatter/raw
+        return processed.slice(0, 500);
     };
 
     const chartData = processData();
+
+    // Helper for large numbers
+    const formatYAxis = (tick: any) => {
+        if (typeof tick === 'number') {
+            if (tick >= 1000000) return `${(tick / 1000000).toFixed(1)}M`;
+            if (tick >= 1000) return `${(tick / 1000).toFixed(1)}K`;
+        }
+        return tick;
+    };
+
+    // Helper for X Axis (Month check)
+    const formatXAxis = (tick: any) => {
+        // Check if it looks like a month number (1-12) and we are grouping by date/month
+        if (typeof tick === 'number' && tick >= 1 && tick <= 12) {
+            // Heuristic: only apply if standard deviation is low or if prompted? 
+            // Simpler: Just map 1-12 to Jan-Dec if it's a small integer.
+            const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return months[tick] || tick;
+        }
+        return tick;
+    };
 
     const renderChart = () => {
         switch (chart_type.toLowerCase()) {
             case 'bar':
             case 'histogram':
                 return (
-                    <BarChart data={chartData}>
+                    <BarChart data={chartData} margin={{ bottom: 40, left: 20, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={x_axis} />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey={y_axis || x_axis} fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                        <XAxis
+                            dataKey={x_axis}
+                            tickFormatter={formatXAxis}
+                            angle={-45}
+                            textAnchor="end"
+                            interval={0}
+                            height={70}
+                            tick={{ fontSize: 12 }}
+                        />
+                        <YAxis tickFormatter={formatYAxis} width={40} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#fff', color: '#000', border: '1px solid #ccc' }}
+                            itemStyle={{ color: '#000' }}
+                        />
+                        <Legend verticalAlign="top" />
+                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" />
+                        <Bar
+                            dataKey={y_axis || x_axis}
+                            name={aggregation ? `${aggregation} of ${y_axis || 'records'}` : y_axis}
+                            fill="#4f46e5"
+                            radius={[4, 4, 0, 0]}
+                        />
                     </BarChart>
                 );
             case 'line':
                 return (
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={{ bottom: 40, left: 20, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={x_axis} />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey={y_axis} stroke="#4f46e5" strokeWidth={2} dot={false} />
+                        <XAxis
+                            dataKey={x_axis}
+                            tickFormatter={formatXAxis}
+                            angle={-45}
+                            textAnchor="end"
+                            height={70}
+                            tick={{ fontSize: 12 }}
+                        />
+                        <YAxis tickFormatter={formatYAxis} width={40} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#fff', color: '#000', border: '1px solid #ccc' }}
+                            itemStyle={{ color: '#000' }}
+                        />
+                        <Legend verticalAlign="top" />
+                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" />
+                        <Line
+                            type="monotone"
+                            dataKey={y_axis}
+                            name={aggregation ? `${aggregation} of ${y_axis}` : y_axis}
+                            stroke="#4f46e5"
+                            strokeWidth={2}
+                            dot={false}
+                        />
                     </LineChart>
                 );
             case 'scatter':

@@ -1,4 +1,5 @@
-import { FileText, Smartphone, Hash, Calendar } from "lucide-react";
+// import { FileText, Smartphone, Hash, Calendar } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface DatasetSummaryProps {
@@ -7,13 +8,14 @@ interface DatasetSummaryProps {
 }
 
 export function DatasetSummary({ summary, filename }: DatasetSummaryProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
     if (!summary) return null;
 
     const getIcon = (type: string) => {
         switch (type) {
-            case "numeric": return <Hash className="w-3 h-3" />;
-            case "datetime": return <Calendar className="w-3 h-3" />;
-            default: return <FileText className="w-3 h-3" />;
+            case "numeric": return <span className="text-xs">#</span>;
+            case "datetime": return <span className="text-xs">📅</span>;
+            default: return <span className="text-xs">Aa</span>;
         }
     };
 
@@ -22,7 +24,7 @@ export function DatasetSummary({ summary, filename }: DatasetSummaryProps) {
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <div className="p-1.5 bg-green-100 rounded-md">
-                        <FileText className="w-4 h-4 text-green-700" />
+                        <span className="text-green-700 text-xs">📄</span>
                     </div>
                     <span className="font-semibold text-gray-800 text-sm truncate max-w-[200px]">{filename}</span>
                 </div>
@@ -32,7 +34,8 @@ export function DatasetSummary({ summary, filename }: DatasetSummaryProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-                {Object.entries(summary.columns).slice(0, 6).map(([col, meta]: [string, any]) => (
+                {/* Show only first 6 if not expanded */}
+                {(isExpanded ? Object.entries(summary.columns) : Object.entries(summary.columns).slice(0, 6)).map(([col, meta]: [string, any]) => (
                     <div key={col} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded-md border border-gray-100">
                         <span className="font-medium text-gray-700 truncate max-w-[80px]" title={col}>{col}</span>
                         <span className={cn(
@@ -47,9 +50,12 @@ export function DatasetSummary({ summary, filename }: DatasetSummaryProps) {
                     </div>
                 ))}
                 {Object.keys(summary.columns).length > 6 && (
-                    <div className="col-span-2 text-center text-xs text-gray-400 italic mt-1">
-                        + {Object.keys(summary.columns).length - 6} more columns
-                    </div>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="col-span-2 text-center text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1 cursor-pointer transition-colors"
+                    >
+                        {isExpanded ? "Show Less" : `+ ${Object.keys(summary.columns).length - 6} more columns`}
+                    </button>
                 )}
             </div>
         </div>
