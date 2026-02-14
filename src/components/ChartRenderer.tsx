@@ -1,8 +1,8 @@
 import {
-    BarChart, Bar, LineChart, Line, XAxis, YAxis, Cartwright, Tooltip, Legend, ResponsiveContainer,
+    BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     ScatterChart, Scatter, PieChart, Pie, Cell
 } from 'recharts';
-import { AlertTriangle } from 'lucide-react';
+// import { AlertTriangle } from 'lucide-react';
 
 interface ChartRendererProps {
     spec: any;
@@ -66,18 +66,21 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     const renderChart = () => {
         switch (chart_type.toLowerCase()) {
             case 'bar':
+            case 'histogram':
                 return (
                     <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey={x_axis} />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey={y_axis || 'count'} fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey={y_axis || x_axis} fill="#4f46e5" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 );
             case 'line':
                 return (
                     <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey={x_axis} />
                         <YAxis />
                         <Tooltip />
@@ -88,6 +91,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
             case 'scatter':
                 return (
                     <ScatterChart>
+                        <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" dataKey={x_axis} name={x_axis} />
                         <YAxis type="number" dataKey={y_axis} name={y_axis} />
                         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
@@ -119,7 +123,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
             default:
                 return (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                        <AlertTriangle className="w-8 h-8 mb-2" />
+                        <div className="text-4xl mb-2">⚠️</div>
                         <p>Unsupported chart type: {chart_type}</p>
                     </div>
                 );

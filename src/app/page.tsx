@@ -24,12 +24,12 @@ export default function Home() {
     if (f.name.endsWith('.csv')) {
       const lines = text.split('\n').filter(l => l.trim());
       if (lines.length === 0) return [];
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/ /g, '_'));
       return lines.slice(1).map(line => {
         const values = line.split(',');
         const obj: any = {};
         headers.forEach((h, i) => {
-          let val = values[i]?.trim();
+          let val: string | number | undefined = values[i]?.trim();
           // Try number conversion
           if (val && !isNaN(Number(val))) val = Number(val);
           obj[h] = val;
@@ -55,7 +55,8 @@ export default function Home() {
       setDatasetData(data);
 
     } catch (err: any) {
-      setError("Failed to upload dataset. " + (err.message || err));
+      const msg = err.response?.data?.detail || err.message || "Unknown error";
+      setError("Failed to upload dataset. " + msg);
     } finally {
       setIsUploading(false);
     }
@@ -80,7 +81,8 @@ export default function Home() {
     } catch (err: any) {
       // Mock fallback if API fails completely (e.g. backend down)
       console.error(err);
-      setError("Failed to generate visualization. " + (err.message || err));
+      const msg = err.response?.data?.detail || err.message || "Unknown error";
+      setError("Failed to generate visualization. " + msg);
     } finally {
       setIsProcessing(false);
     }
