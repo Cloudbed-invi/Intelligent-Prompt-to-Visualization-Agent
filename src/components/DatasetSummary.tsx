@@ -37,7 +37,7 @@ export function DatasetSummary({ summary, filename }: DatasetSummaryProps) {
                 {/* Show only first 6 if not expanded */}
                 {(isExpanded ? Object.entries(summary.columns) : Object.entries(summary.columns).slice(0, 6)).map(([col, meta]: [string, any]) => (
                     <div key={col} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded-md border border-gray-100">
-                        <span className="font-medium text-gray-700 truncate max-w-[80px]" title={col}>{col}</span>
+                        <span className="font-medium text-gray-700 truncate max-w-[150px]" title={col}>{col}</span>
                         <span className={cn(
                             "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider",
                             meta.type === "numeric" ? "bg-blue-100 text-blue-700" :
