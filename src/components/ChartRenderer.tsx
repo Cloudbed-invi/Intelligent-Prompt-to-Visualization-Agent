@@ -104,7 +104,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
             processed.sort((a: any, b: any) => a[x_axis] < b[x_axis] ? -1 : 1);
         }
 
-        // 4. Limit
+        // 4. Limit based on chart type if not specified
         if (spec.limit) {
             processed = processed.slice(0, spec.limit);
         } else {
@@ -190,19 +190,25 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
 
     const renderChart = () => {
         const currentData = filteredData;
+        const commonMargin = { top: 10, right: 30, left: 20, bottom: 90 };
+
+        // Dynamic height for XAxis labels (tilted)
+        const xAxisHeight = 70;
+        // Position brush below the axis
+        const brushY = 480;
 
         switch (currentChartType) {
             case 'bar':
             case 'histogram':
                 return (
-                    <BarChart data={currentData} margin={{ bottom: 20, left: 20, right: 20 }}>
+                    <BarChart data={currentData} margin={commonMargin}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             dataKey={x_axis}
                             tickFormatter={formatXAxis}
                             angle={-45}
                             textAnchor="end"
-                            height={60}
+                            height={xAxisHeight}
                             tick={{ fontSize: 11 }}
                             interval={0}
                         />
@@ -211,7 +217,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                             contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)', border: '1px solid #ccc' }}
                             itemStyle={{ color: 'var(--color-foreground)' }}
                         />
-                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" y={350} />
+                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Bar
                             dataKey={y_axis || x_axis}
                             name={formatLabel(aggregation ? `${aggregation} of ${y_axis || 'records'}` : y_axis)}
@@ -225,36 +231,52 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                 );
             case 'line':
                 return (
-                    <LineChart data={currentData} margin={{ bottom: 20, left: 20, right: 20 }}>
+                    <LineChart data={currentData} margin={commonMargin}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={x_axis} tickFormatter={formatXAxis} />
+                        <XAxis
+                            dataKey={x_axis}
+                            tickFormatter={formatXAxis}
+                            angle={-45}
+                            textAnchor="end"
+                            height={xAxisHeight}
+                            tick={{ fontSize: 11 }}
+                            interval={0}
+                        />
                         <YAxis tickFormatter={formatYAxis} width={40} />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }} />
-                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" />
+                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Line type="monotone" dataKey={y_axis} stroke="#4f46e5" strokeWidth={2} dot={false} />
                     </LineChart>
                 );
             case 'area':
                 return (
-                    <AreaChart data={currentData} margin={{ bottom: 20, left: 20, right: 20 }}>
+                    <AreaChart data={currentData} margin={commonMargin}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={x_axis} tickFormatter={formatXAxis} />
+                        <XAxis
+                            dataKey={x_axis}
+                            tickFormatter={formatXAxis}
+                            angle={-45}
+                            textAnchor="end"
+                            height={xAxisHeight}
+                            tick={{ fontSize: 11 }}
+                            interval={0}
+                        />
                         <YAxis tickFormatter={formatYAxis} width={40} />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }} />
-                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" />
+                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Area type="monotone" dataKey={y_axis} stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.3} />
                     </AreaChart>
                 );
             case 'pie':
                 return (
-                    <PieChart>
+                    <PieChart margin={{ top: 10, right: 30, left: 20, bottom: 40 }}>
                         <Pie
                             data={currentData}
                             dataKey={y_axis || 'count'}
                             nameKey={x_axis}
                             cx="50%"
                             cy="50%"
-                            outerRadius={100}
+                            outerRadius={140}
                             fill="#4f46e5"
                             label
                         >
@@ -267,9 +289,16 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                 );
             case 'scatter':
                 return (
-                    <ScatterChart>
+                    <ScatterChart margin={{ top: 10, right: 30, left: 20, bottom: 90 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" dataKey={x_axis} name={x_axis} />
+                        <XAxis
+                            type="number"
+                            dataKey={x_axis}
+                            name={x_axis}
+                            height={xAxisHeight}
+                            angle={-45}
+                            textAnchor="end"
+                        />
                         <YAxis type="number" dataKey={y_axis} name={y_axis} />
                         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
                         <Scatter name={title} data={currentData} fill="#4f46e5" />
@@ -313,7 +342,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
             <h3 className="text-center font-semibold text-gray-700 dark:text-gray-200 mb-2">{title}</h3>
 
             {/* Chart Container */}
-            <div className="w-full h-[400px]">
+            <div className="w-full h-[550px]">
                 <ResponsiveContainer width="100%" height="100%">
                     {renderChart()}
                 </ResponsiveContainer>
