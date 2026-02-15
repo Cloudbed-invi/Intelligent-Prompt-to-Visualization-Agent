@@ -1,9 +1,9 @@
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    ScatterChart, Scatter, PieChart, Pie, Cell, Brush, AreaChart, Area
+    ScatterChart, Scatter, PieChart, Pie, Cell, AreaChart, Area, ReferenceArea
 } from 'recharts';
 import { useState, useMemo, useEffect } from "react";
-import { Filter, Eye, EyeOff, BarChart3, LineChart as LineIcon, PieChart as PieIcon, ScatterChart as ScatterIcon, AreaChart as AreaIcon } from "lucide-react";
+import { Filter, Eye, EyeOff, BarChart3, LineChart as LineIcon, PieChart as PieIcon, ScatterChart as ScatterIcon, AreaChart as AreaIcon, RotateCcw, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChartRendererProps {
@@ -17,9 +17,17 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
     const [currentChartType, setCurrentChartType] = useState<string>("bar");
 
+    // Zoom State
+    const [zoomDomain, setZoomDomain] = useState<{ start: number; end: number } | null>(null);
+    const [refAreaLeft, setRefAreaLeft] = useState<string | null>(null);
+    const [refAreaRight, setRefAreaRight] = useState<string | null>(null);
+
     // Reset state when data/spec changes
     useEffect(() => {
         setHiddenCategories(new Set());
+        setZoomDomain(null);
+        setRefAreaLeft(null);
+        setRefAreaRight(null);
         if (spec?.chart_type) {
             setCurrentChartType(spec.chart_type.toLowerCase());
         }
@@ -133,10 +141,16 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
         return map;
     }, [categories]);
 
-    // Filtered data
+    // Filtered data (Legend)
     const filteredData = useMemo(() => {
         return baseChartData.filter(d => !hiddenCategories.has(String(d[x_axis])));
     }, [baseChartData, hiddenCategories, x_axis]);
+
+    // Zoomed Data
+    const currentData = useMemo(() => {
+        if (!zoomDomain) return filteredData;
+        return filteredData.slice(zoomDomain.start, zoomDomain.end + 1);
+    }, [filteredData, zoomDomain]);
 
 
     // --- Interaction Handlers ---
@@ -159,6 +173,54 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
         }
     };
 
+    // Zoom Handlers
+    const zoom = () => {
+        if (refAreaLeft === refAreaRight || refAreaRight === null || refAreaLeft === null) {
+            setRefAreaLeft(null);
+            setRefAreaRight(null);
+            return;
+        }
+
+        // Find indices in global filtered data
+        let startIndex = filteredData.findIndex(d => String(d[x_axis]) === refAreaLeft);
+        let endIndex = filteredData.findIndex(d => String(d[x_axis]) === refAreaRight);
+
+        if (startIndex === -1 || endIndex === -1) {
+            setRefAreaLeft(null);
+            setRefAreaRight(null);
+            return;
+        }
+
+        if (startIndex > endIndex) [startIndex, endIndex] = [endIndex, startIndex];
+
+        setZoomDomain({ start: startIndex, end: endIndex });
+        setRefAreaLeft(null);
+        setRefAreaRight(null);
+    };
+
+    const zoomOut = () => {
+        setZoomDomain(null);
+        setRefAreaLeft(null);
+        setRefAreaRight(null);
+    };
+
+    const onMouseDown = (e: any) => {
+        if (e && e.activeLabel) {
+            setRefAreaLeft(e.activeLabel);
+        }
+    };
+
+    const onMouseMove = (e: any) => {
+        if (refAreaLeft && e && e.activeLabel) {
+            setRefAreaRight(e.activeLabel);
+        }
+    };
+
+    const onMouseUp = () => {
+        zoom();
+    };
+
+
     // Helper formatting
     const formatYAxis = (tick: any) => {
         if (typeof tick === 'number') {
@@ -168,7 +230,8 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
         return tick;
     };
 
-    const xValues = filteredData.map(d => d[x_axis]).filter(v => typeof v === 'number');
+    // X Axis Logic
+    const xValues = currentData.map(d => d[x_axis]).filter(v => typeof v === 'number');
     const maxX = xValues.length > 0 ? Math.max(...xValues) : 0;
     const isLikelyMonth = maxX > 0 && maxX <= 12;
 
@@ -189,19 +252,30 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     };
 
     const renderChart = () => {
-        const currentData = filteredData;
-        const commonMargin = { top: 10, right: 30, left: 20, bottom: 90 };
-
-        // Dynamic height for XAxis labels (tilted)
+        // Increased left margin to 60 to prevent first label clip
+        const commonMargin = { top: 10, right: 30, left: 60, bottom: 90 };
         const xAxisHeight = 70;
-        // Position brush below the axis
-        const brushY = 480;
+
+        // Props shared by all charts for zoom
+        const zoomProps = {
+            onMouseDown,
+            onMouseMove,
+            onMouseUp,
+            data: currentData,
+            margin: commonMargin,
+        };
+
+        const renderRefArea = () => (
+            (refAreaLeft && refAreaRight) ? (
+                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#8884d8" fillOpacity={0.3} />
+            ) : null
+        );
 
         switch (currentChartType) {
             case 'bar':
             case 'histogram':
                 return (
-                    <BarChart data={currentData} margin={commonMargin}>
+                    <BarChart {...zoomProps}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             dataKey={x_axis}
@@ -217,7 +291,6 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                             contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)', border: '1px solid #ccc' }}
                             itemStyle={{ color: 'var(--color-foreground)' }}
                         />
-                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Bar
                             dataKey={y_axis || x_axis}
                             name={formatLabel(aggregation ? `${aggregation} of ${y_axis || 'records'}` : y_axis)}
@@ -227,11 +300,12 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                                 <Cell key={`cell-${index}`} fill={colorMap[String(entry[x_axis])] || '#4f46e5'} />
                             ))}
                         </Bar>
+                        {renderRefArea()}
                     </BarChart>
                 );
             case 'line':
                 return (
-                    <LineChart data={currentData} margin={commonMargin}>
+                    <LineChart {...zoomProps}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             dataKey={x_axis}
@@ -244,13 +318,13 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                         />
                         <YAxis tickFormatter={formatYAxis} width={40} />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }} />
-                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Line type="monotone" dataKey={y_axis} stroke="#4f46e5" strokeWidth={2} dot={false} />
+                        {renderRefArea()}
                     </LineChart>
                 );
             case 'area':
                 return (
-                    <AreaChart data={currentData} margin={commonMargin}>
+                    <AreaChart {...zoomProps}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             dataKey={x_axis}
@@ -263,13 +337,14 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                         />
                         <YAxis tickFormatter={formatYAxis} width={40} />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }} />
-                        <Brush dataKey={x_axis} height={25} stroke="#8884d8" y={brushY} />
                         <Area type="monotone" dataKey={y_axis} stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.3} />
+                        {renderRefArea()}
                     </AreaChart>
                 );
+            // Pie and Scatter don't support X-axis zoom well in this implementation, keep standard
             case 'pie':
                 return (
-                    <PieChart margin={{ top: 10, right: 30, left: 20, bottom: 40 }}>
+                    <PieChart margin={{ top: 10, right: 30, left: 60, bottom: 40 }}>
                         <Pie
                             data={currentData}
                             dataKey={y_axis || 'count'}
@@ -289,7 +364,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                 );
             case 'scatter':
                 return (
-                    <ScatterChart margin={{ top: 10, right: 30, left: 20, bottom: 90 }}>
+                    <ScatterChart margin={{ top: 10, right: 30, left: 60, bottom: 90 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             type="number"
@@ -320,7 +395,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     return (
         <div className="w-full flex flex-col items-center">
             {/* Chart Type Selector Toolbar */}
-            <div className="flex items-center gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <div className="flex items-center gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg relative">
                 {chartOptions.map((opt) => (
                     <button
                         key={opt.id}
@@ -337,19 +412,47 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                         {opt.label}
                     </button>
                 ))}
+
+                {/* Visual Reset Zoom Button */}
+                {zoomDomain && (
+                    <button
+                        onClick={zoomOut}
+                        className="ml-4 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800"
+                        title="Right click on chart also resets zoom"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset Zoom
+                    </button>
+                )}
             </div>
 
             <h3 className="text-center font-semibold text-gray-700 dark:text-gray-200 mb-2">{title}</h3>
 
-            {/* Chart Container */}
-            <div className="w-full h-[550px]">
+            {/* Chart Container - Added onContextMenu for Right Click Reset */}
+            <div
+                className="w-full h-[550px] select-none"
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    zoomOut();
+                }}
+            >
                 <ResponsiveContainer width="100%" height="100%">
                     {renderChart()}
                 </ResponsiveContainer>
             </div>
 
+            {/* Instructions for Zoom */}
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-[-10px] mb-4 text-center">
+                {['bar', 'line', 'area'].includes(currentChartType) && (
+                    <span>
+                        <ZoomIn className="inline w-3 h-3 mr-1" />
+                        Drag to zoom • Right-click to reset
+                    </span>
+                )}
+            </div>
+
             {/* Custom Interactive Legend / Filter */}
-            <div className="w-full mt-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+            <div className="w-full bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
                     <div className="flex items-center gap-2">
                         <Filter className="w-4 h-4 text-indigo-500" />
