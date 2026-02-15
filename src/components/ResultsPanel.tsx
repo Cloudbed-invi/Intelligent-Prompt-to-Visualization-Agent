@@ -115,9 +115,24 @@ export function ResultsPanel({ data, result, isLoading }: ResultsPanelProps) {
                 )}
 
                 {activeTab === "insights" && (
-                    <div className="prose prose-sm max-w-none text-gray-600">
-                        <h3 className="text-gray-900 font-semibold mb-2">Analysis</h3>
-                        <p>{result.insights}</p>
+                    <div className="space-y-4">
+                        <h3 className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                            <Lightbulb className="w-5 h-5 text-yellow-500" />
+                            AI Analysis
+                        </h3>
+
+                        {result.spec?.key_insights && result.spec.key_insights.length > 0 ? (
+                            <ul className="space-y-3">
+                                {result.spec.key_insights.map((insight: string, i: number) => (
+                                    <li key={i} className="flex gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <span className="text-indigo-500 font-bold">•</span>
+                                        {insight}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-600">{result.insights || result.spec?.insight_summary || "No specific insights generated."}</p>
+                        )}
                     </div>
                 )}
             </div>
