@@ -14,7 +14,7 @@ export function Header() {
             </div>
             <div className="flex items-center gap-4">
                 <a
-                    href="https://github.com/your-repo"
+                    href="https://github.com/Cloudbed-invi/Intelligent-Prompt-to-Visualization-Agent"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
