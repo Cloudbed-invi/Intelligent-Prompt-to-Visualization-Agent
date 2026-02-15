@@ -1,9 +1,9 @@
 import {
     BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    ScatterChart, Scatter, PieChart, Pie, Cell, Brush
+    ScatterChart, Scatter, PieChart, Pie, Cell, Brush, AreaChart, Area
 } from 'recharts';
 import { useState, useMemo, useEffect } from "react";
-import { Filter, Eye, EyeOff } from "lucide-react";
+import { Filter, Eye, EyeOff, BarChart3, LineChart as LineIcon, PieChart as PieIcon, ScatterChart as ScatterIcon, AreaChart as AreaIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChartRendererProps {
@@ -15,14 +15,19 @@ const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 export function ChartRenderer({ spec, data }: ChartRendererProps) {
     const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
-    // Reset filter when data/spec changes
+    const [currentChartType, setCurrentChartType] = useState<string>("bar");
+
+    // Reset state when data/spec changes
     useEffect(() => {
         setHiddenCategories(new Set());
+        if (spec?.chart_type) {
+            setCurrentChartType(spec.chart_type.toLowerCase());
+        }
     }, [spec, data]);
 
     if (!spec || !data) return null;
 
-    const { chart_type, x_axis, y_axis, title, aggregation } = spec;
+    const { x_axis, y_axis, title, aggregation } = spec;
 
     // --- Data Processing ---
     const processData = () => {
@@ -103,8 +108,8 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
         if (spec.limit) {
             processed = processed.slice(0, spec.limit);
         } else {
-            if (chart_type === 'bar') processed = processed.slice(0, 50);
-            else if (chart_type === 'line') processed = processed.slice(0, 2000);
+            if (currentChartType === 'bar') processed = processed.slice(0, 50);
+            else if (currentChartType === 'line' || currentChartType === 'area') processed = processed.slice(0, 2000);
             else processed = processed.slice(0, 1000);
         }
 
@@ -112,7 +117,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     };
 
     // Original processed data
-    const baseChartData = useMemo(() => processData(), [spec, data]);
+    const baseChartData = useMemo(() => processData(), [spec, data, currentChartType]);
 
     // Extract Categories
     const categories = useMemo(() => {
@@ -186,7 +191,7 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     const renderChart = () => {
         const currentData = filteredData;
 
-        switch (chart_type.toLowerCase()) {
+        switch (currentChartType) {
             case 'bar':
             case 'histogram':
                 return (
@@ -229,6 +234,17 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                         <Line type="monotone" dataKey={y_axis} stroke="#4f46e5" strokeWidth={2} dot={false} />
                     </LineChart>
                 );
+            case 'area':
+                return (
+                    <AreaChart data={currentData} margin={{ bottom: 20, left: 20, right: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey={x_axis} tickFormatter={formatXAxis} />
+                        <YAxis tickFormatter={formatYAxis} width={40} />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }} />
+                        <Brush dataKey={x_axis} height={30} stroke="#8884d8" />
+                        <Area type="monotone" dataKey={y_axis} stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.3} />
+                    </AreaChart>
+                );
             case 'pie':
                 return (
                     <PieChart>
@@ -260,13 +276,41 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
                     </ScatterChart>
                 );
             default:
-                return <div className="p-10 text-center">Unsupported chart: {chart_type}</div>;
+                return <div className="p-10 text-center">Unsupported chart: {currentChartType}</div>;
         }
     };
 
+    const chartOptions = [
+        { id: 'bar', label: 'Bar', icon: BarChart3 },
+        { id: 'line', label: 'Line', icon: LineIcon },
+        { id: 'area', label: 'Area', icon: AreaIcon },
+        { id: 'pie', label: 'Pie', icon: PieIcon },
+        { id: 'scatter', label: 'Scatter', icon: ScatterIcon },
+    ];
+
     return (
         <div className="w-full flex flex-col items-center">
-            <h3 className="text-center font-semibold text-gray-700 dark:text-gray-200 mb-4">{title}</h3>
+            {/* Chart Type Selector Toolbar */}
+            <div className="flex items-center gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                {chartOptions.map((opt) => (
+                    <button
+                        key={opt.id}
+                        onClick={() => setCurrentChartType(opt.id)}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                            currentChartType === opt.id
+                                ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        )}
+                        title={`Switch to ${opt.label} Chart`}
+                    >
+                        <opt.icon className="w-3.5 h-3.5" />
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+
+            <h3 className="text-center font-semibold text-gray-700 dark:text-gray-200 mb-2">{title}</h3>
 
             {/* Chart Container */}
             <div className="w-full h-[400px]">
