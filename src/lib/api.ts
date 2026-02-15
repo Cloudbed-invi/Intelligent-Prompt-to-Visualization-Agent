@@ -36,10 +36,11 @@ export const uploadDataset = async (file: File): Promise<UploadResponse> => {
     return response.data;
 };
 
-export const generateVisualization = async (fileId: string, prompt: string): Promise<QueryResponse> => {
+export const generateVisualization = async (fileId: string, prompt: string, chartType?: string): Promise<QueryResponse> => {
     const response = await api.post<QueryResponse>("/query", {
         file_id: fileId,
         prompt: prompt,
+        chart_type: chartType,
     });
     return response.data;
 };

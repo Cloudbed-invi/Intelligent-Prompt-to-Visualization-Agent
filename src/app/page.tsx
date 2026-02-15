@@ -208,7 +208,7 @@ export default function Home() {
     }
   };
 
-  const handlePromptSubmit = async (prompt: string) => {
+  const handlePromptSubmit = async (prompt: string, chartType?: string) => {
     if (!uploadInfo) return;
 
     setIsProcessing(true);
@@ -216,7 +216,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await generateVisualization(uploadInfo.file_id, prompt);
+      const response = await generateVisualization(uploadInfo.file_id, prompt, chartType);
 
       if (response.status === 'error') {
         setError("AI generation failed.");
