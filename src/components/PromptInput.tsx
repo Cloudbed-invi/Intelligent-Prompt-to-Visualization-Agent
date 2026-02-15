@@ -33,7 +33,7 @@ export function PromptInput({ onSubmit, isProcessing, disabled }: PromptInputPro
 
     return (
         <div className={cn("mt-6 transition-opacity duration-300", disabled ? "opacity-50 pointer-events-none" : "opacity-100")}>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Describe your visualization
             </label>
 
@@ -45,7 +45,7 @@ export function PromptInput({ onSubmit, isProcessing, disabled }: PromptInputPro
                     onKeyDown={handleKeyDown}
                     placeholder="e.g., Show me the total sales per region as a bar chart..."
                     rows={3}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-shadow text-gray-900 placeholder:text-gray-400"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-shadow text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     disabled={disabled || isProcessing}
                 />
                 <button
@@ -71,7 +71,7 @@ export function PromptInput({ onSubmit, isProcessing, disabled }: PromptInputPro
                             // Optional: auto-submit? No, let user confirm.
                             inputRef.current?.focus();
                         }}
-                        className="text-xs bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors flex items-center gap-1"
+                        className="text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 rounded-full hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-white hover:border-indigo-200 dark:hover:border-gray-600 transition-colors flex items-center gap-1"
                     >
                         <Sparkles className="w-3 h-3" />
                         {ex}

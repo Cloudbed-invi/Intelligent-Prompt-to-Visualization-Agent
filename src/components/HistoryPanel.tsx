@@ -22,9 +22,9 @@ export function HistoryPanel({ history, currentDatasetName, availableDatasets = 
     if (history.length === 0) return null;
 
     return (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 h-full flex flex-col">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 h-full flex flex-col transition-colors duration-300">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <History className="w-4 h-4" /> History
                 </h3>
                 <button
@@ -35,7 +35,7 @@ export function HistoryPanel({ history, currentDatasetName, availableDatasets = 
                 </button>
             </div>
 
-            <div className="space-y-2 overflow-y-auto max-h-[400px] pr-1 scrollbar-thin scrollbar-thumb-gray-200">
+            <div className="space-y-2 overflow-y-auto max-h-[400px] pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
                 {history.map((item) => {
                     const isDifferentDataset = item.datasetName && item.datasetName !== currentDatasetName;
                     const isAvailable = item.datasetName && availableDatasets.includes(item.datasetName);
@@ -48,17 +48,17 @@ export function HistoryPanel({ history, currentDatasetName, availableDatasets = 
                             key={item.id}
                             onClick={() => isClickable && onSelect(item)}
                             className={cn(
-                                "group flex flex-col gap-1 p-3 rounded-lg border border-gray-100 transition-all",
+                                "group flex flex-col gap-1 p-3 rounded-lg border border-gray-100 dark:border-gray-700 transition-all",
                                 isClickable
-                                    ? "bg-white hover:bg-indigo-50 hover:border-indigo-100 cursor-pointer active:scale-[0.98] shadow-sm"
-                                    : "bg-gray-50 opacity-60 cursor-not-allowed"
+                                    ? "bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:border-indigo-100 dark:hover:border-gray-600 cursor-pointer active:scale-[0.98] shadow-sm"
+                                    : "bg-gray-50 dark:bg-gray-900 opacity-60 cursor-not-allowed"
                             )}
                             title={!isClickable ? `Dataset missing: ${item.datasetName}. Re-upload to view.` : ""}
                         >
                             <div className="flex justify-between items-start w-full">
                                 <span className={cn(
                                     "text-xs font-medium line-clamp-2 pr-6",
-                                    !isClickable ? "text-gray-400" : "text-gray-700"
+                                    !isClickable ? "text-gray-400 dark:text-gray-500" : "text-gray-700 dark:text-gray-200"
                                 )}>
                                     "{item.prompt}"
                                 </span>

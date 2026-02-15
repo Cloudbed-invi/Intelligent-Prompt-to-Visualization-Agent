@@ -24,6 +24,36 @@ export default function Home() {
   const [datasetsCache, setDatasetsCache] = useState<Record<string, any[]>>({});
 
   const [chartType, setChartType] = useState('bar');
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Load Dark Mode Preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      setDarkMode(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      // Optional: Check system pref
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !savedTheme) {
+        setDarkMode(true);
+        document.documentElement.classList.add("dark");
+      }
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode(prev => {
+      const newMode = !prev;
+      if (newMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      }
+      return newMode;
+    });
+  };
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -218,8 +248,8 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      <Header />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 pb-20 font-sans">
+      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
       <main className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
 
