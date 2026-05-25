@@ -26,31 +26,59 @@ A production-style AI agent that converts natural language prompts and datasets 
 ## 🚀 Setup & Run
 
 ### Prerequisites
-- Node.js & npm
-- Python 3.10+ (Conda recommended)
-- Google Gemini API Key
+- **Node.js** (v18+ recommended) & **npm**
+- **Python 3.10+** (Conda recommended)
+- **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/))
 
-### 1. Backend Setup
+---
+
+### ⚡ Option A: Single-Command Quickstart (Recommended)
+
+We have created unified, cross-platform orchestrator scripts that automatically check requirements, install missing dependencies, and launch both servers simultaneously!
+
+#### On Windows:
+Double-click `run.bat` or run in PowerShell:
+```powershell
+.\run.bat
+```
+
+#### On macOS / Linux:
+Run in your terminal:
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+---
+
+### 🛠️ Option B: Manual Setup
+
+If you prefer to start the servers manually in separate terminals, follow these steps:
+
+#### 1. Backend Setup (FastAPI)
 ```bash
 cd backend
-# Activate Conda environment
+# Create environment or activate your conda environment
 conda activate prompt-viz-agent
-# Install dependencies
+# Install backend dependencies
 pip install -r requirements.txt
-# Set API Key (PowerShell)
-$env:GEMINI_API_KEY="your-api-key-here"
-# Run Server
+# Copy environment file and add your GEMINI_API_KEY
+cp .env.example .env
+# Start the FastAPI server
 uvicorn main:app --reload --port 8080
 ```
-Backend will run at `http://localhost:8080`.
+The backend server runs at `http://localhost:8080`.
 
-### 2. Frontend Setup
+#### 2. Frontend Setup (Next.js)
 ```bash
 cd frontend
+# Install frontend dependencies
 npm install
+# Start the Next.js development server
 npm run dev
 ```
-Frontend will run at `http://localhost:3000`.
+The frontend application runs at `http://localhost:3000`.
+
 
 ## 🧪 Testing the Agent
 1. Open `http://localhost:3000`.

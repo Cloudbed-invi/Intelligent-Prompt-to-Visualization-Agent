@@ -1,24 +1,43 @@
 import google.generativeai as genai
+import os
+import sys
+from dotenv import load_dotenv
 
-# Make sure your API key is set
-genai.configure(api_key="AIzaSyCfCIrIWdM8EelbGmTb5XhFzx75yhJsuwk")
+# Load from environment variables
+load_dotenv()
+
+# Also try loading specifically from backend/.env if it exists
+backend_env = os.path.join(os.path.dirname(__file__), "backend", ".env")
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
+
+api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    print("[WARNING] GEMINI_API_KEY environment variable not found.")
+    print("Please set the GEMINI_API_KEY environment variable or create a 'backend/.env' file containing:")
+    print("GEMINI_API_KEY=your-api-key-here\n")
+    sys.exit(1)
+
+# Configure Gemini
+genai.configure(api_key=api_key)
 
 print("Checking available models for your API key...")
 try:
+    models_found = []
     for m in genai.list_models():
         # We only care about models that can generate content
         if 'generateContent' in m.supported_generation_methods:
-            print(f"✅ Available: {m.name}")
+            models_found.append(m.name)
+            print(f"[OK] Available: {m.name}")
+    
+    if not models_found:
+        print("[WARNING] No text generation models found on your API key.")
 except Exception as e:
-    print(f"Error listing models: {e}")
-
-import google.generativeai as genai
-import os
-
-# --- SETUP ---
-# Replace with your actual key or ensure it's in your environment variables
-api_key = "AIzaSyCfCIrIWdM8EelbGmTb5XhFzx75yhJsuwk" 
-genai.configure(api_key=api_key)
+    error_msg = str(e).split('\n')[0]
+    print(f"[ERROR] Error listing models: {error_msg}")
+    print("Ensure your API key is correct and active.")
+    sys.exit(1)
 
 # The models from your list that are most likely to have a Free Tier
 candidates = [
@@ -29,30 +48,29 @@ candidates = [
     "gemini-1.5-flash-latest"      # 5. Old faithful fallback
 ]
 
-print(f"🚀 Testing {len(candidates)} models for Free Tier access...\n")
+print(f"\n[INFO] Testing {len(candidates)} models for Free Tier access...\n")
 
 success_model = None
 
 for model_name in candidates:
-    print(f"Testing: {model_name}...", end=" ")
+    print(f"Testing {model_name}...", end=" ", flush=True)
     try:
         model = genai.GenerativeModel(model_name)
         response = model.generate_content("Reply with the single word: Success")
         
         # If we get here, it worked!
-        print("✅ WORKING!")
+        print("[SUCCESS]")
         print(f"   Response: {response.text.strip()}")
         success_model = model_name
         break # Stop testing, we found one!
         
     except Exception as e:
-        print("❌ FAILED")
-        # Print a short error to see if it's 429 (Quota) or 404 (Not Found)
+        print("[FAILED]")
         error_msg = str(e).split('\n')[0] # Keep it clean
         print(f"   Error: {error_msg}\n")
 
-print("-" * 30)
+print("-" * 40)
 if success_model:
-    print(f"🎉 USE THIS MODEL IN YOUR CODE: '{success_model}'")
+    print(f"[SUCCESS] Use this model in your configuration: '{success_model}'")
 else:
-    print("⚠️ All tested models failed. You likely need to add a Billing Account (Credit Card) to unlock the Free Tier.")
+    print("[WARNING] All tested models failed. Ensure your billing is active or check if the API key has permission for Gemini models.")
